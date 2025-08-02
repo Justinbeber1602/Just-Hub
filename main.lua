@@ -9,7 +9,6 @@ screenGui.ResetOnSpawn = false
 
 local font = Enum.Font.GothamSemibold
 
--- เมนูหลัก
 local mainFrame = Instance.new("Frame", screenGui)
 mainFrame.Size = UDim2.new(0, 420, 0, 500)
 mainFrame.Position = UDim2.new(0.5, -210, 0.5, -250)
@@ -19,7 +18,6 @@ mainFrame.Visible = true
 mainFrame.Active = true
 mainFrame.Draggable = true
 
--- Top Bar สำหรับลาก + ปุ่มย่อ
 local topBar = Instance.new("Frame", mainFrame)
 topBar.Size = UDim2.new(1, 0, 0, 35)
 topBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -35,7 +33,6 @@ titleLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- ปุ่มย่อ
 local minimizeButton = Instance.new("TextButton", topBar)
 minimizeButton.Size = UDim2.new(0, 30, 0, 30)
 minimizeButton.Position = UDim2.new(1, -35, 0, 2)
@@ -46,13 +43,11 @@ minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 minimizeButton.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
 minimizeButton.BorderColor3 = Color3.fromRGB(255, 0, 0)
 
--- ส่วนที่ถูกซ่อนตอนย่อ
 local bodyFrame = Instance.new("Frame", mainFrame)
 bodyFrame.Position = UDim2.new(0, 0, 0, 35)
 bodyFrame.Size = UDim2.new(1, 0, 1, -35)
 bodyFrame.BackgroundTransparency = 1
 
--- Search Bar
 local searchBox = Instance.new("TextBox", bodyFrame)
 searchBox.Size = UDim2.new(1, -20, 0, 35)
 searchBox.Position = UDim2.new(0, 10, 0, 10)
@@ -64,7 +59,6 @@ searchBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 searchBox.BorderColor3 = Color3.fromRGB(255, 0, 0)
 searchBox.ClearTextOnFocus = false
 
--- Scrollable list
 local scrollFrame = Instance.new("ScrollingFrame", bodyFrame)
 scrollFrame.Position = UDim2.new(0, 10, 0, 55)
 scrollFrame.Size = UDim2.new(1, -20, 1, -65)
@@ -79,7 +73,6 @@ local UIListLayout = Instance.new("UIListLayout", scrollFrame)
 UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- รายการพิกัด
 local locations = {
     {name = "🏬 ตลาดโลก", cframe = CFrame.new(2830.64, 14.15, 2088.41)},
     {name = "🏠 แลนฟ้า", cframe = CFrame.new(2412.7, 14.2, 2236.8)},
@@ -108,7 +101,6 @@ local locations = {
     {name = "🏫 เหล็ก", cframe = CFrame.new(1083.07, 13.19, 3699.13)},
 }
 
--- สร้างปุ่มแต่ละจุด
 local function createTPItem(location)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 45)
@@ -145,7 +137,6 @@ local function createTPItem(location)
     btn.Parent = scrollFrame
 end
 
--- ฟังก์ชันกรองชื่อ
 local function filterButtons(query)
     query = query:lower()
     for _, child in ipairs(scrollFrame:GetChildren()) do
@@ -160,12 +151,10 @@ searchBox:GetPropertyChangedSignal("Text"):Connect(function()
     filterButtons(searchBox.Text)
 end)
 
--- สร้างปุ่มทั้งหมด
 for _, loc in ipairs(locations) do
     createTPItem(loc)
 end
 
--- สลับย่อ/ขยาย
 local minimized = false
 minimizeButton.MouseButton1Click:Connect(function()
     minimized = not minimized
@@ -173,10 +162,10 @@ minimizeButton.MouseButton1Click:Connect(function()
     minimizeButton.Text = minimized and "➕" or "➖"
 end)
 
--- ปุ่ม Ctrl สำหรับเปิด/ปิด UI
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
         mainFrame.Visible = not mainFrame.Visible
     end
 end)
+
