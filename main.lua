@@ -146,15 +146,17 @@ local function filterButtons(query)
     end
 end
 
--- เชื่อมต่อช่องค้นหา
+-- ค้นหา
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
     filterButtons(searchBox.Text)
 end)
 
+-- สร้างปุ่มสำหรับแต่ละจุด
 for _, loc in ipairs(locations) do
     createTPItem(loc)
 end
 
+-- ปุ่มย่อ/ขยาย bodyFrame
 local minimized = false
 minimizeButton.MouseButton1Click:Connect(function()
     minimized = not minimized
@@ -162,6 +164,7 @@ minimizeButton.MouseButton1Click:Connect(function()
     minimizeButton.Text = minimized and "➕" or "➖"
 end)
 
+-- ปุ่ม Ctrl ซ่อน/แสดง UI
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
@@ -169,3 +172,19 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
+-- ปุ่ม Toggle หุบ/ขยาย UI (มุมขวาล่าง)
+local toggleButton = Instance.new("TextButton", screenGui)
+toggleButton.Size = UDim2.new(0, 40, 0, 40)
+toggleButton.Position = UDim2.new(1, -50, 1, -50)
+toggleButton.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+toggleButton.BorderColor3 = Color3.fromRGB(255, 0, 0)
+toggleButton.Text = "📦"
+toggleButton.Font = font
+toggleButton.TextSize = 20
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Active = true
+toggleButton.Draggable = true
+
+toggleButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
+end)
