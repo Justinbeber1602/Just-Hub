@@ -74,7 +74,7 @@ UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local locations = {
-    {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 14.55, 2108.39)},
+        {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 14.55, 2108.39)},
     {name = "ATM ตลาดโลก", cframe = CFrame.new(2999.37, 14.60, 2278.67)},
     {name = "ผับ", cframe = CFrame.new(3158.82, 14.69, 2300.57)},
     {name = "ร้านอาหาร", cframe = CFrame.new(3158.82, 14.69, 2300.57)},
@@ -98,7 +98,7 @@ local locations = {
     {name = "องุ่น", cframe = CFrame.new(5460.13, 47.22, -1191.45)},
     {name = "สตอร์เบอรี่", cframe = CFrame.new(5949.39, 48.97, -1699.58)},
     {name = "กระหล่ำ", cframe = CFrame.new(6085.44, 49.19, -2235.12)},
-
+}
 local function createTPItem(location)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 45)
@@ -186,4 +186,3 @@ toggleButton.Draggable = true
 toggleButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
-
