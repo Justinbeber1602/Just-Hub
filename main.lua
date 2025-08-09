@@ -74,7 +74,7 @@ UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local locations = {
-        {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 14.55, 2108.39)},
+    {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 14.55, 2108.39)},
     {name = "ATM ตลาดโลก", cframe = CFrame.new(2999.37, 14.60, 2278.67)},
     {name = "ผับ", cframe = CFrame.new(3158.82, 14.69, 2300.57)},
     {name = "ร้านอาหาร", cframe = CFrame.new(3158.82, 14.69, 2300.57)},
@@ -99,6 +99,7 @@ local locations = {
     {name = "สตอร์เบอรี่", cframe = CFrame.new(5949.39, 48.97, -1699.58)},
     {name = "กระหล่ำ", cframe = CFrame.new(6085.44, 49.19, -2235.12)},
 }
+
 local function createTPItem(location)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 45)
@@ -144,17 +145,14 @@ local function filterButtons(query)
     end
 end
 
--- ค้นหา
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
     filterButtons(searchBox.Text)
 end)
 
--- สร้างปุ่มสำหรับแต่ละจุด
 for _, loc in ipairs(locations) do
     createTPItem(loc)
 end
 
--- ปุ่มย่อ/ขยาย bodyFrame
 local minimized = false
 minimizeButton.MouseButton1Click:Connect(function()
     minimized = not minimized
@@ -162,7 +160,6 @@ minimizeButton.MouseButton1Click:Connect(function()
     minimizeButton.Text = minimized and "➕" or "➖"
 end)
 
--- ปุ่ม Ctrl ซ่อน/แสดง UI
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
@@ -170,7 +167,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- ปุ่ม Toggle หุบ/ขยาย UI (มุมขวาล่าง)
 local toggleButton = Instance.new("TextButton", screenGui)
 toggleButton.Size = UDim2.new(0, 40, 0, 40)
 toggleButton.Position = UDim2.new(1, -50, 1, -50)
