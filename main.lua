@@ -75,10 +75,8 @@ UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local locations = {
     {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 14.55, 2108.39)},
-
     {name = "ATM ตลาดโลก", cframe = CFrame.new(2999.37, 14.60, 2278.67)},
     {name = "ผับ", cframe = CFrame.new(3158.82, 14.69, 2300.57)},
-
     {name = "ร้านอาหาร", cframe = CFrame.new(3158.82, 14.69, 2300.57)},
     {name = "อู่", cframe = CFrame.new(32864.30, 23.00, 2716.44)},
     {name = "โรงพยาบาล", cframe = CFrame.new(3012.29, 14.64, 3526.09)},
@@ -188,3 +186,4 @@ toggleButton.Draggable = true
 toggleButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
+
