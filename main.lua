@@ -187,4 +187,4 @@ toggleButton.Draggable = true
 
 toggleButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
-end
+end)
