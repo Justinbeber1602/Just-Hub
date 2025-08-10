@@ -86,7 +86,7 @@ local locations = {
     {name = "ดอกไม้", cframe = CFrame.new(-1790.67, 128.10, 1135.51)},
     {name = "มะพร้าว", cframe = CFrame.new(-2832.60, 18.46, 2197.16)},
     {name = "แลนแดง", cframe = CFrame.new(-3891.84, 74.42, -486.54)},
-    {name = "เหล็ก", cframe = CFrame.new(-4078.10, 68.95, -2818.08)},
+    {name = "เหล็ก1", cframe = CFrame.new(-4078.10, 68.95, -2818.08)},
     {name = "หญ้า", cframe = CFrame.new(-2445.71, 72.97, -2037.70)},
     {name = "พริก", cframe = CFrame.new(-611.63, 13.96, -3343.03)},
     {name = "เหล็ก", cframe = CFrame.new(-191.36, 15.35, -2391.63)},
@@ -99,7 +99,6 @@ local locations = {
     {name = "สตอร์เบอรี่", cframe = CFrame.new(5949.39, 48.97, -1699.58)},
     {name = "กระหล่ำ", cframe = CFrame.new(6085.44, 49.19, -2235.12)},
 }
-
 local function createTPItem(location)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 45)
@@ -145,14 +144,17 @@ local function filterButtons(query)
     end
 end
 
+-- ค้นหา
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
     filterButtons(searchBox.Text)
 end)
 
+-- สร้างปุ่มสำหรับแต่ละจุด
 for _, loc in ipairs(locations) do
     createTPItem(loc)
 end
 
+-- ปุ่มย่อ/ขยาย bodyFrame
 local minimized = false
 minimizeButton.MouseButton1Click:Connect(function()
     minimized = not minimized
@@ -160,6 +162,7 @@ minimizeButton.MouseButton1Click:Connect(function()
     minimizeButton.Text = minimized and "➕" or "➖"
 end)
 
+-- ปุ่ม Ctrl ซ่อน/แสดง UI
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
@@ -167,6 +170,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
+-- ปุ่ม Toggle หุบ/ขยาย UI (มุมขวาล่าง)
 local toggleButton = Instance.new("TextButton", screenGui)
 toggleButton.Size = UDim2.new(0, 40, 0, 40)
 toggleButton.Position = UDim2.new(1, -50, 1, -50)
@@ -182,4 +186,3 @@ toggleButton.Draggable = true
 toggleButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
-
