@@ -1,6 +1,6 @@
 local playerService = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local player = Players.LocalPlayer
+local player = playerService.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 local screenGui = Instance.new("ScreenGui", playerGui)
@@ -186,4 +186,5 @@ toggleButton.Draggable = true
 toggleButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
+
 
