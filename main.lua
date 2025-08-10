@@ -19,8 +19,6 @@ mainFrame.Position = UDim2.new(0.5, -210, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
 mainFrame.Visible = true
-mainFrame.Active = true
-mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
 local topBar = Instance.new("Frame", mainFrame)
@@ -195,3 +193,4 @@ toggleButton.Draggable = true
 toggleButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
+
