@@ -79,21 +79,20 @@ UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 -- 📌 จุดทั้งหมดจากโค้ดเดิม
 local locations = {
     {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 16.55, 2108.39)},
-    {name = "ATM ตลาดโลก", cframe = CFrame.new(2999.37, 16.60, 2278.67)},
+    {name = "ร้านค้า", cframe = CFrame.new(2999.37, 16.60, 2278.67)},
     {name = "ผับ", cframe = CFrame.new(3158.82, 16.69, 2300.57)},
-    {name = "ร้านอาหาร", cframe = CFrame.new(3158.82, 16.69, 2300.57)},
-    {name = "อู่", cframe = CFrame.new(32864.30, 25.00, 2716.44)},
-    {name = "โรงพยาบาล", cframe = CFrame.new(3012.29, 16.64, 3526.09)},
+    {name = "ร้านอาหาร", cframe = CFrame.new(3481.10, 16.24, 2583.04)},
+    {name = "อู่", cframe = CFrame.new(2830.99, 16.24, 2671.79)},
+    {name = "โรงพยาบาล", cframe = CFrame.new(3012.29, 20.64, 3526.09)},
     {name = "สถานีตำรวจ", cframe = CFrame.new(3632.24, 24.07, 3215.28)},
     {name = "หมู", cframe = CFrame.new(-533.00, 58.63, 3132.92)},
     {name = "กล้วย", cframe = CFrame.new(-1099.27, 130.38, 2420.52)},
     {name = "ดอกไม้", cframe = CFrame.new(-1790.67, 130.10, 1135.51)},
     {name = "มะพร้าว", cframe = CFrame.new(-2832.60, 20.46, 2197.16)},
     {name = "แลนแดง", cframe = CFrame.new(-3891.84, 76.42, -486.54)},
-    {name = "เหล็ก1", cframe = CFrame.new(-4078.10, 70.95, -2818.08)},
+    {name = "เหล็ก", cframe = CFrame.new(-4078.10, 70.95, -2818.08)},
     {name = "หญ้า", cframe = CFrame.new(-2445.71, 74.97, -2037.70)},
     {name = "พริก", cframe = CFrame.new(-611.63, 16.96, -3343.03)},
-    {name = "เหล็ก", cframe = CFrame.new(-191.36, 17.35, -2391.63)},
     {name = "แลกมะม่วง", cframe = CFrame.new(1060.44, 18.08, -521.77)},
     {name = "ไม้", cframe = CFrame.new(2410.08, 33.03, -2410.61)},
     {name = "แปรรูปหิน", cframe = CFrame.new(6149.76, 51.03, -4225.38)},
@@ -193,4 +192,3 @@ toggleButton.Draggable = true
 toggleButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
-
