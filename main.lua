@@ -1,15 +1,19 @@
-local playerService = game:GetService("Players")
+-- 📌 ต้องรันใน LocalScript เท่านั้น
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local player = playerService.LocalPlayer
+
+local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-local screenGui = Instance.new("ScreenGui", playerGui)
+-- UI หลัก
+local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TeleportUI"
 screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
 
 local font = Enum.Font.GothamSemibold
 
-local mainFrame = Instance.new("Frame", screenGui)
+local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 420, 0, 500)
 mainFrame.Position = UDim2.new(0.5, -210, 0.5, -250)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -17,6 +21,7 @@ mainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
 mainFrame.Visible = true
 mainFrame.Active = true
 mainFrame.Draggable = true
+mainFrame.Parent = screenGui
 
 local topBar = Instance.new("Frame", mainFrame)
 topBar.Size = UDim2.new(1, 0, 0, 35)
@@ -73,6 +78,7 @@ local UIListLayout = Instance.new("UIListLayout", scrollFrame)
 UIListLayout.Padding = UDim.new(0, 8)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
+-- 📌 จุดทั้งหมดจากโค้ดเดิม
 local locations = {
     {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 14.55, 2108.39)},
     {name = "ATM ตลาดโลก", cframe = CFrame.new(2999.37, 14.60, 2278.67)},
@@ -99,6 +105,8 @@ local locations = {
     {name = "สตอร์เบอรี่", cframe = CFrame.new(5949.39, 48.97, -1699.58)},
     {name = "กระหล่ำ", cframe = CFrame.new(6085.44, 49.19, -2235.12)},
 }
+
+-- ฟังก์ชันสร้างปุ่ม
 local function createTPItem(location)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 45)
@@ -125,16 +133,19 @@ local function createTPItem(location)
     end)
 
     btn.MouseButton2Click:Connect(function()
-        setclipboard("CFrame.new(" .. tostring(location.cframe) .. ")")
-        btn.Text = "📋 Copied!"
-        task.delay(1, function()
-            btn.Text = location.name
-        end)
+        if setclipboard then
+            setclipboard("CFrame.new(" .. tostring(location.cframe) .. ")")
+            btn.Text = "📋 Copied!"
+            task.delay(1, function()
+                btn.Text = location.name
+            end)
+        end
     end)
 
     btn.Parent = scrollFrame
 end
 
+-- ฟังก์ชันค้นหา
 local function filterButtons(query)
     query = query:lower()
     for _, child in ipairs(scrollFrame:GetChildren()) do
@@ -144,17 +155,15 @@ local function filterButtons(query)
     end
 end
 
--- ค้นหา
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
     filterButtons(searchBox.Text)
 end)
 
--- สร้างปุ่มสำหรับแต่ละจุด
 for _, loc in ipairs(locations) do
     createTPItem(loc)
 end
 
--- ปุ่มย่อ/ขยาย bodyFrame
+-- ปุ่มย่อ/ขยาย
 local minimized = false
 minimizeButton.MouseButton1Click:Connect(function()
     minimized = not minimized
@@ -162,7 +171,7 @@ minimizeButton.MouseButton1Click:Connect(function()
     minimizeButton.Text = minimized and "➕" or "➖"
 end)
 
--- ปุ่ม Ctrl ซ่อน/แสดง UI
+-- ปุ่ม Ctrl ซ่อน/แสดง
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
@@ -170,7 +179,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- ปุ่ม Toggle หุบ/ขยาย UI (มุมขวาล่าง)
+-- ปุ่ม Toggle ขวาล่าง
 local toggleButton = Instance.new("TextButton", screenGui)
 toggleButton.Size = UDim2.new(0, 40, 0, 40)
 toggleButton.Position = UDim2.new(1, -50, 1, -50)
@@ -186,5 +195,3 @@ toggleButton.Draggable = true
 toggleButton.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
-
-
