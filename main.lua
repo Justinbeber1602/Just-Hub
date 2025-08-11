@@ -86,27 +86,6 @@ local function DisableNoclip()
     end
 end
 
--- Invisible variables
-local invisibleEnabled = false
-local function SetInvisible(enabled)
-    local character = player.Character
-    if not character then return end
-    for _, part in pairs(character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.Transparency = enabled and 1 or 0
-            part.CanCollide = not enabled
-        elseif part:IsA("Decal") or part:IsA("Texture") then
-            part.Transparency = enabled and 1 or 0
-        elseif part:IsA("ParticleEmitter") or part:IsA("Light") then
-            part.Enabled = not enabled
-        end
-    end
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.NameDisplayDistance = enabled and 0 or 100 -- ซ่อน/แสดงชื่อ
-    end
-end
-
 -- สร้าง Toggle สำหรับ Noclip
 MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือปิดโหมดเดินทะลุ", function(value)
     noclipEnabled = value
@@ -115,11 +94,5 @@ MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือ
     else
         DisableNoclip()
     end
-end)
-
--- สร้าง Toggle สำหรับ Invisible
-MiscSection:NewToggle("เปิด/ปิด ล่องหน", "ทำให้ตัวละครล่องหนและไม่ชน", function(value)
-    invisibleEnabled = value
-    SetInvisible(invisibleEnabled)
 end)
 
