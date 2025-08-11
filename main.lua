@@ -1,4 +1,5 @@
--- 📌 ต้องรันใน LocalScript เท่านั้น
+-- 📌 ต้องรันใน LocalScript เท่านั้น (เช่น ใส่ใน StarterPlayerScripts)
+
 local success, lib = pcall(function()
     return game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua")
 end)
@@ -12,17 +13,13 @@ local Window = Library.CreateLib("JustHub", "BloodTheme")
 
 local player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserinputService") or game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
 
--- 안전값 (ไม่ให้ตกแมพ)
-local MIN_SAFE_Y = 10
-local TELEPORT_RAISE = 5 -- ยกสูงขึ้น 5 studs เวลาวาร์ป เพื่อไม่ให้ติดพื้น/ตก
-
--- ================= Teleport Tab (ตำแหน่งสำเร็จรูป) =================
+-- ================= Teleport Tab =================
 local TeleportTab = Window:NewTab("Teleport")
 local LocationSection = TeleportTab:NewSection("เลือกสถานที่")
+local TeleportToPlayerSection = TeleportTab:NewSection("เทเลพอร์ตไปยังผู้เล่น")
 
 local locations = {
     {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 16.55, 2108.39)},
@@ -55,91 +52,85 @@ for _, loc in ipairs(locations) do
     LocationSection:NewButton(loc.name, "กดเพื่อวาร์ปไปยัง " .. loc.name, function()
         local character = player.Character or player.CharacterAdded:Wait()
         local root = character:WaitForChild("HumanoidRootPart")
-        local pos = loc.cframe.Position
-        if pos.Y < MIN_SAFE_Y then pos = Vector3.new(pos.X, MIN_SAFE_Y, pos.Z) end
-        root.CFrame = CFrame.new(pos + Vector3.new(0, TELEPORT_RAISE, 0))
+        root.CFrame = loc.cframe
     end)
 end
 
--- ================= Teleport To Player Section =================
-local TeleportPlayersSection = TeleportTab:NewSection("วาร์ปไปผู้เล่น")
+-- ฟังก์ชัน Teleport ป้องกันตกแมพ
+local function safeTeleport(targetCFrame)
+    local character = player.Character or player.CharacterAdded:Wait()
+    local root = character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
 
--- เก็บปุ่มเพื่อจะลบเวลาผู้เล่นออก
-local playerButtons = {}
+    -- ตรวจสอบตำแหน่งบนพื้น (ประมาณ)
+    local rayOrigin = targetCFrame.Position + Vector3.new(0, 50, 0)
+    local rayDirection = Vector3.new(0, -100, 0)
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {character}
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
 
-local function safeRemoveButton(btn)
-    if not btn then return end
-    pcall(function()
-        if type(btn.Remove) == "function" then
-            btn:Remove()
-        elseif type(btn.remove) == "function" then
-            btn:remove()
+    local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+
+    if raycastResult and raycastResult.Position then
+        -- ถ้ามีพื้นอยู่ด้านล่าง ก็เทเลพอร์ตไปพื้นนั้น (สูงกว่าพื้น 5 studs)
+        local safePos = raycastResult.Position + Vector3.new(0, 5, 0)
+        root.CFrame = CFrame.new(safePos) * CFrame.new(targetCFrame.LookVector)
+    else
+        warn("ไม่สามารถเทเลพอร์ต: ไม่มีพื้นรองรับตำแหน่งนี้")
+    end
+end
+
+-- สร้าง Dropdown รายชื่อผู้เล่นให้เลือก teleport ไป
+local function updatePlayerList()
+    TeleportToPlayerSection:Clear() -- ล้างปุ่มเก่าออกก่อน
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= player then
+            TeleportToPlayerSection:NewButton(plr.Name, "Teleport ไปหา " .. plr.Name, function()
+                local targetChar = plr.Character
+                if targetChar then
+                    local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+                    if targetRoot then
+                        safeTeleport(targetRoot.CFrame + Vector3.new(0, 5, 0))
+                    else
+                        warn(plr.Name .. " ไม่มี HumanoidRootPart")
+                    end
+                else
+                    warn(plr.Name .. " ไม่มีตัวละคร")
+                end
+            end)
         end
-    end)
-end
-
-local function createPlayerButton(p)
-    if p == player then return end
-    -- สร้างปุ่มใหม่
-    local ok, btn = pcall(function()
-        return TeleportPlayersSection:NewButton(p.Name, "วาร์ปไปยัง " .. p.Name, function()
-            if not p.Character or not p.Character:FindFirstChild("HumanoidRootPart") then
-                warn("ผู้เล่นเป้าหมายไม่มีตัวละคร")
-                return
-            end
-            local targetPos = p.Character.HumanoidRootPart.Position
-            if targetPos.Y < MIN_SAFE_Y then targetPos = Vector3.new(targetPos.X, MIN_SAFE_Y, targetPos.Z) end
-            local char = player.Character or player.CharacterAdded:Wait()
-            local root = char:WaitForChild("HumanoidRootPart")
-            root.CFrame = CFrame.new(targetPos + Vector3.new(0, TELEPORT_RAISE, 0))
-        end)
-    end)
-    if ok and btn then
-        playerButtons[p.UserId] = btn
     end
 end
 
-local function refreshPlayerButtons()
-    -- ลบปุ่มเก่าทั้งหมดก่อน แล้วสร้างใหม่
-    for id, btn in pairs(playerButtons) do
-        safeRemoveButton(btn)
-        playerButtons[id] = nil
-    end
-    for _, p in ipairs(Players:GetPlayers()) do
-        createPlayerButton(p)
-    end
-end
+-- เรียกตอนเริ่มแรก และสามารถเรียกใหม่ได้ถ้าผู้เล่นเปลี่ยน
+updatePlayerList()
 
--- สร้างตอนเริ่ม
-refreshPlayerButtons()
-
--- อัพเดตเมื่มีผู้เล่นเข้า/ออก
-Players.PlayerAdded:Connect(function(p)
-    -- รอให้ตัวละครโหลดก่อนสร้างปุ่มก็ได้ (ไม่จำเป็น)
-    createPlayerButton(p)
+Players.PlayerAdded:Connect(function()
+    updatePlayerList()
 end)
 
-Players.PlayerRemoving:Connect(function(p)
-    if playerButtons[p.UserId] then
-        safeRemoveButton(playerButtons[p.UserId])
-        playerButtons[p.UserId] = nil
-    end
+Players.PlayerRemoving:Connect(function()
+    updatePlayerList()
 end)
 
--- ================= Misc Tab (Noclip / Invisible / Godmode / Fly) =================
+-- ================= Misc Tab =================
 local MiscTab = Window:NewTab("Misc")
 local MiscSection = MiscTab:NewSection("ฟีเจอร์เสริม")
 
 -- Noclip
 local noclipEnabled = false
 local noclipConnection
+
 local function EnableNoclip()
-    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
     noclipConnection = RunService.Stepped:Connect(function()
         if not noclipEnabled then return end
-        local char = player.Character
-        if char then
-            for _, part in pairs(char:GetChildren()) do
+        local character = player.Character
+        if character then
+            for _, part in pairs(character:GetChildren()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
                 end
@@ -147,28 +138,28 @@ local function EnableNoclip()
         end
     end)
 end
+
 local function DisableNoclip()
-    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
-    local char = player.Character
-    if char then
-        for _, part in pairs(char:GetChildren()) do
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+    local character = player.Character
+    if character then
+        for _, part in pairs(character:GetChildren()) do
             if part:IsA("BasePart") then
                 part.CanCollide = true
             end
         end
     end
 end
-MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือปิดโหมดเดินทะลุ", function(v)
-    noclipEnabled = v
-    if v then EnableNoclip() else DisableNoclip() end
-end)
 
--- Invisible (local) — NOTE: ถ้าต้องการให้คนอื่นมองไม่เห็น ต้องใช้ Server script (อธิบายไว้ก่อนหน้านี้)
+-- Invisible
 local invisibleEnabled = false
 local function SetInvisible(enabled)
-    local char = player.Character
-    if not char then return end
-    for _, part in pairs(char:GetChildren()) do
+    local character = player.Character
+    if not character then return end
+    for _, part in pairs(character:GetChildren()) do
         if part:IsA("BasePart") then
             part.Transparency = enabled and 1 or 0
             part.CanCollide = not enabled
@@ -178,156 +169,168 @@ local function SetInvisible(enabled)
             part.Enabled = not enabled
         end
     end
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
     if humanoid then
-        humanoid.NameDisplayDistance = enabled and 0 or 100
+        humanoid.NameDisplayDistance = enabled and 0 or 100 -- ซ่อน/แสดงชื่อ
     end
 end
-MiscSection:NewToggle("เปิด/ปิด ล่องหน (local)", "ล่องหนเฉพาะเครื่องเราเอง", function(v)
-    invisibleEnabled = v
-    SetInvisible(v)
-end)
 
--- Godmode (local): รีเซ็ตพลังชีวิตทันทีเมื่อถูกทำร้าย (local-only, server อาจเขียนทับ)
+-- God Mode (สุขภาพไม่ลด)
 local godmodeEnabled = false
-local godConnection
-local function EnableGodmode()
-    local char = player.Character
-    if not char then return end
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
+local function SetGodMode(enabled)
+    local character = player.Character
+    if not character then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
     if not humanoid then return end
-    -- ตัด connection เก่า
-    if godConnection then godConnection:Disconnect() godConnection = nil end
-    humanoid.Health = humanoid.MaxHealth
-    godConnection = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-        if godmodeEnabled and humanoid.Health < humanoid.MaxHealth then
-            humanoid.Health = humanoid.MaxHealth
-        end
-    end)
+    if enabled then
+        humanoid.HealthChanged:Connect(function()
+            if humanoid.Health < humanoid.MaxHealth then
+                humanoid.Health = humanoid.MaxHealth
+            end
+        end)
+        humanoid.Health = humanoid.MaxHealth
+    end
 end
-local function DisableGodmode()
-    if godConnection then godConnection:Disconnect() godConnection = nil end
-end
-MiscSection:NewToggle("เปิด/ปิด God Mode (local)", "พยายามคง HP เต็ม (local only)", function(v)
-    godmodeEnabled = v
-    if v then EnableGodmode() else DisableGodmode() end
-end)
 
--- Fly (space ขึ้น, shift ลง, WASD บังคับ)
+-- Fly
 local flying = false
-local flySpeed = 60
-local bodyGyro, bodyVelocity
+local speed = 50
+local bodyGyro
+local bodyVelocity
 local flyConnection
-local ctrl = {f=0,b=0,l=0,r=0,up=0,down=0}
+local ctrl = {f = 0, b = 0, l = 0, r = 0, u = 0, d = 0}
 
 local function StartFly()
-    local char = player.Character
-    if not char then return end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    local character = player.Character
+    if not character then return end
+    local root = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
     if not root or not humanoid then return end
 
     humanoid.PlatformStand = true
 
     bodyGyro = Instance.new("BodyGyro", root)
     bodyGyro.P = 9e4
-    bodyGyro.maxTorque = Vector3.new(9e9,9e9,9e9)
-    bodyGyro.CFrame = root.CFrame
+    bodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.cframe = root.CFrame
 
     bodyVelocity = Instance.new("BodyVelocity", root)
-    bodyVelocity.MaxForce = Vector3.new(9e9,9e9,9e9)
-    bodyVelocity.Velocity = Vector3.new(0,0,0)
+    bodyVelocity.velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
 
-    if flyConnection then flyConnection:Disconnect() flyConnection = nil end
+    local function onInputBegan(input, gameProcessed)
+        if gameProcessed then return end
+        local key = input.KeyCode
+        if key == Enum.KeyCode.W then
+            ctrl.f = 1
+        elseif key == Enum.KeyCode.S then
+            ctrl.b = -1
+        elseif key == Enum.KeyCode.A then
+            ctrl.l = -1
+        elseif key == Enum.KeyCode.D then
+            ctrl.r = 1
+        elseif key == Enum.KeyCode.Space then
+            ctrl.u = 1
+        elseif key == Enum.KeyCode.LeftShift then
+            ctrl.d = -1
+        end
+    end
+
+    local function onInputEnded(input, gameProcessed)
+        if gameProcessed then return end
+        local key = input.KeyCode
+        if key == Enum.KeyCode.W then
+            ctrl.f = 0
+        elseif key == Enum.KeyCode.S then
+            ctrl.b = 0
+        elseif key == Enum.KeyCode.A then
+            ctrl.l = 0
+        elseif key == Enum.KeyCode.D then
+            ctrl.r = 0
+        elseif key == Enum.KeyCode.Space then
+            ctrl.u = 0
+        elseif key == Enum.KeyCode.LeftShift then
+            ctrl.d = 0
+        end
+    end
+
+    UserInputService.InputBegan:Connect(onInputBegan)
+    UserInputService.InputEnded:Connect(onInputEnded)
+
     flyConnection = RunService.Heartbeat:Connect(function()
         if not flying then
-            if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
-            if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+            if bodyGyro then bodyGyro:Destroy() end
+            if bodyVelocity then bodyVelocity:Destroy() end
             if humanoid then humanoid.PlatformStand = false end
-            if flyConnection then flyConnection:Disconnect() flyConnection = nil end
+            if flyConnection then flyConnection:Disconnect() end
             return
         end
 
-        local cam = Workspace.CurrentCamera
-        local moveVector = (cam.CFrame.LookVector * (ctrl.f + ctrl.b)) + (cam.CFrame.RightVector * (ctrl.r + ctrl.l))
-        local vertical = (ctrl.up + ctrl.down)
-        if moveVector.Magnitude > 0 then
-            moveVector = moveVector.Unit * flySpeed
+        local moveVec = (workspace.CurrentCamera.CFrame.LookVector * (ctrl.f + ctrl.b)) +
+                        (workspace.CurrentCamera.CFrame.RightVector * (ctrl.r + ctrl.l)) +
+                        Vector3.new(0, ctrl.u + ctrl.d, 0)
+
+        if moveVec.Magnitude > 0 then
+            bodyVelocity.velocity = moveVec.Unit * speed
+            bodyGyro.cframe = workspace.CurrentCamera.CFrame
         else
-            moveVector = Vector3.new(0,0,0)
+            bodyVelocity.velocity = Vector3.new(0, 0, 0)
         end
-        bodyVelocity.Velocity = moveVector + Vector3.new(0, vertical * flySpeed, 0)
-        if bodyGyro then bodyGyro.CFrame = cam.CFrame end
     end)
 end
 
 local function StopFly()
     flying = false
-    if flyConnection then flyConnection:Disconnect() flyConnection = nil end
-    if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
-    if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
-    local char = player.Character
-    if char then
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if humanoid then humanoid.PlatformStand = false end
+    local character = player.Character
+    if not character then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.PlatformStand = false
+    end
+    if bodyGyro then
+        bodyGyro:Destroy()
+        bodyGyro = nil
+    end
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
+    end
+    if flyConnection then
+        flyConnection:Disconnect()
+        flyConnection = nil
     end
 end
 
--- ควบคุม input สำหรับบิน
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-    local key = input.KeyCode
-    if key == Enum.KeyCode.W then ctrl.f = 1
-    elseif key == Enum.KeyCode.S then ctrl.b = -1
-    elseif key == Enum.KeyCode.A then ctrl.l = -1
-    elseif key == Enum.KeyCode.D then ctrl.r = 1
-    elseif key == Enum.KeyCode.Space then ctrl.up = 1
-    elseif key == Enum.KeyCode.LeftShift or key == Enum.KeyCode.RightShift then ctrl.down = -1
+-- Toggle Fly
+MiscSection:NewToggle("เปิด/ปิด Fly", "บินโดยกด W A S D, Space ขึ้น, Shift ลง", function(value)
+    flying = value
+    if flying then
+        StartFly()
+    else
+        StopFly()
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input, processed)
-    if processed then return end
-    if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-    local key = input.KeyCode
-    if key == Enum.KeyCode.W then ctrl.f = 0
-    elseif key == Enum.KeyCode.S then ctrl.b = 0
-    elseif key == Enum.KeyCode.A then ctrl.l = 0
-    elseif key == Enum.KeyCode.D then ctrl.r = 0
-    elseif key == Enum.KeyCode.Space then ctrl.up = 0
-    elseif key == Enum.KeyCode.LeftShift or key == Enum.KeyCode.RightShift then ctrl.down = 0
-    end
-end)
-
-MiscSection:NewToggle("เปิด/ปิด Fly", "W/A/S/D + Space ขึ้น + Shift ลง", function(v)
-    flying = v
-    if v then StartFly() else StopFly() end
-end)
-
--- ================ จัดการกรณี respawn / รี-เช็ตสถานะ ================
--- เมื่อตัวละครถูก spawn ใหม่ ให้รีเซ็ตสถานะบางอย่าง (เช่น invisible/godmode/noclip)
-local function OnCharacterAdded(char)
-    -- รี-apply invisible ถ้าตั้งไว้
-    if invisibleEnabled then
-        SetInvisible(true)
-    end
-    -- รี-apply noclip ถ้าตั้งไว้
+-- Toggle Noclip
+MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือปิดโหมดเดินทะลุ", function(value)
+    noclipEnabled = value
     if noclipEnabled then
-        -- immediate set non-collide
-        for _, p in pairs(char:GetChildren()) do
-            if p:IsA("BasePart") then p.CanCollide = false end
-        end
+        EnableNoclip()
+    else
+        DisableNoclip()
     end
-    -- รี-apply godmode
+end)
+
+-- Toggle Invisible
+MiscSection:NewToggle("เปิด/ปิด ล่องหน", "ทำให้ตัวละครล่องหนและไม่ชน", function(value)
+    invisibleEnabled = value
+    SetInvisible(invisibleEnabled)
+end)
+
+-- Toggle God Mode
+MiscSection:NewToggle("เปิด/ปิด God Mode", "ป้องกันไม่ให้เลือดลด", function(value)
+    godmodeEnabled = value
     if godmodeEnabled then
-        EnableGodmode()
+        SetGodMode(true)
     end
-end
-
-player.CharacterAdded:Connect(OnCharacterAdded)
-if player.Character then
-    OnCharacterAdded(player.Character)
-end
-
--- จบบริบูรณ์
+end)
