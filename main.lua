@@ -1,84 +1,14 @@
 -- 📌 ต้องรันใน LocalScript เท่านั้น
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("JustHub", "BloodTheme")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+-- ✅ สร้าง Tab หลัก
+local TeleportTab = Window:NewTab("Teleport")
 
--- UI หลัก
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TeleportUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
+-- ✅ สร้าง Section
+local LocationSection = TeleportTab:NewSection("เลือกสถานที่")
 
-local font = Enum.Font.GothamSemibold
-
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 420, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -210, 0.5, -250)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-mainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-mainFrame.Visible = true
--- ลบ mainFrame.Active = true กับ mainFrame.Draggable = true ออกไป
-
-mainFrame.Parent = screenGui
-
-local topBar = Instance.new("Frame", mainFrame)
-topBar.Size = UDim2.new(1, 0, 0, 35)
-topBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-topBar.BorderSizePixel = 0
-
-local titleLabel = Instance.new("TextLabel", topBar)
-titleLabel.Size = UDim2.new(1, -40, 1, 0)
-titleLabel.Position = UDim2.new(0, 10, 0, 0)
-titleLabel.Text = "📦 Teleport Menu By JustShop"
-titleLabel.Font = font
-titleLabel.TextSize = 18
-titleLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local minimizeButton = Instance.new("TextButton", topBar)
-minimizeButton.Size = UDim2.new(0, 30, 0, 30)
-minimizeButton.Position = UDim2.new(1, -35, 0, 2)
-minimizeButton.Text = "➖"
-minimizeButton.Font = font
-minimizeButton.TextSize = 20
-minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-minimizeButton.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
-minimizeButton.BorderColor3 = Color3.fromRGB(255, 0, 0)
-
-local bodyFrame = Instance.new("Frame", mainFrame)
-bodyFrame.Position = UDim2.new(0, 0, 0, 35)
-bodyFrame.Size = UDim2.new(1, 0, 1, -35)
-bodyFrame.BackgroundTransparency = 1
-
-local searchBox = Instance.new("TextBox", bodyFrame)
-searchBox.Size = UDim2.new(1, -20, 0, 35)
-searchBox.Position = UDim2.new(0, 10, 0, 10)
-searchBox.PlaceholderText = "🔍 Search location..."
-searchBox.Font = font
-searchBox.TextSize = 18
-searchBox.TextColor3 = Color3.new(1, 1, 1)
-searchBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-searchBox.BorderColor3 = Color3.fromRGB(255, 0, 0)
-searchBox.ClearTextOnFocus = false
-
-local scrollFrame = Instance.new("ScrollingFrame", bodyFrame)
-scrollFrame.Position = UDim2.new(0, 10, 0, 55)
-scrollFrame.Size = UDim2.new(1, -20, 1, -65)
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollFrame.ScrollBarThickness = 8
-scrollFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-scrollFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
-scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-
-local UIListLayout = Instance.new("UIListLayout", scrollFrame)
-UIListLayout.Padding = UDim.new(0, 8)
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
--- จุดทั้งหมดจากโค้ดเดิม
+-- จุดทั้งหมด
 local locations = {
     {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 16.55, 2108.39)},
     {name = "ATM ตลาดโลก", cframe = CFrame.new(2999.37, 16.60, 2278.67)},
@@ -106,130 +36,13 @@ local locations = {
     {name = "กระหล่ำ", cframe = CFrame.new(6085.44, 51.19, -2235.12)},
 }
 
--- ฟังก์ชันสร้างปุ่ม
-local function createTPItem(location)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -10, 0, 45)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    btn.BorderColor3 = Color3.fromRGB(255, 0, 0)
-    btn.Text = location.name
-    btn.Font = font
-    btn.TextSize = 18
-    btn.TextColor3 = Color3.fromRGB(255, 0, 0)
-    btn.AutoButtonColor = false
-    btn.Name = location.name:lower()
+local player = game.Players.LocalPlayer
 
-    btn.MouseEnter:Connect(function()
-        btn.BackgroundColor3 = Color3.fromRGB(60, 20, 20)
-    end)
-    btn.MouseLeave:Connect(function()
-        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    end)
-
-    btn.MouseButton1Click:Connect(function()
+-- ✅ สร้างปุ่มแต่ละสถานที่
+for _, loc in ipairs(locations) do
+    LocationSection:NewButton(loc.name, "กดเพื่อวาร์ปไปยัง " .. loc.name, function()
         local character = player.Character or player.CharacterAdded:Wait()
         local root = character:WaitForChild("HumanoidRootPart")
-        root.CFrame = location.cframe
+        root.CFrame = loc.cframe
     end)
-
-    btn.MouseButton2Click:Connect(function()
-        if setclipboard then
-            setclipboard("CFrame.new(" .. tostring(location.cframe) .. ")")
-            btn.Text = "📋 Copied!"
-            task.delay(1, function()
-                btn.Text = location.name
-            end)
-        end
-    end)
-
-    btn.Parent = scrollFrame
 end
-
--- ฟังก์ชันค้นหา
-local function filterButtons(query)
-    query = query:lower()
-    for _, child in ipairs(scrollFrame:GetChildren()) do
-        if child:IsA("TextButton") then
-            child.Visible = (query == "") or (string.find(child.Name, query) ~= nil)
-        end
-    end
-end
-
-searchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    filterButtons(searchBox.Text)
-end)
-
-for _, loc in ipairs(locations) do
-    createTPItem(loc)
-end
-
--- ปุ่มย่อ/ขยาย
-local minimized = false
-minimizeButton.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    bodyFrame.Visible = not minimized
-    minimizeButton.Text = minimized and "➕" or "➖"
-end)
-
--- ปุ่ม Ctrl ซ่อน/แสดง
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl then
-        mainFrame.Visible = not mainFrame.Visible
-    end
-end)
-
--- ปุ่ม Toggle ขวาล่าง
-local toggleButton = Instance.new("TextButton", screenGui)
-toggleButton.Size = UDim2.new(0, 40, 0, 40)
-toggleButton.Position = UDim2.new(1, -50, 1, -50)
-toggleButton.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
-toggleButton.BorderColor3 = Color3.fromRGB(255, 0, 0)
-toggleButton.Text = "📦"
-toggleButton.Font = font
-toggleButton.TextSize = 20
-toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleButton.Active = true
-
--- ลบ mainFrame.Draggable เพราะใช้วิธีลากเองแทน
-toggleButton.Draggable = true
-
-toggleButton.MouseButton1Click:Connect(function()
-    mainFrame.Visible = not mainFrame.Visible
-end)
-
--- ----------- เพิ่มระบบลาก (Drag & Drop) UI -------------
-local dragging = false
-local dragInput
-local dragStart
-local startPos
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    mainFrame.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
-    )
-end
-
-topBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-topBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-        updateDrag(input)
-    end
-end)
-
