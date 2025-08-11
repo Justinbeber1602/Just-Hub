@@ -1,5 +1,4 @@
--- 📌 ต้องรันใน LocalScript เท่านั้น (เช่น ใส่ใน StarterPlayerScripts)
-
+-- 📌 รันใน LocalScript เท่านั้น (StarterPlayerScripts)
 local success, lib = pcall(function()
     return game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua")
 end)
@@ -12,14 +11,13 @@ local Library = loadstring(lib)()
 local Window = Library.CreateLib("JustHub", "BloodTheme")
 
 local player = game.Players.LocalPlayer
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
 
 -- ================= Teleport Tab =================
 local TeleportTab = Window:NewTab("Teleport")
 local LocationSection = TeleportTab:NewSection("เลือกสถานที่")
-local TeleportToPlayerSection = TeleportTab:NewSection("เทเลพอร์ตไปยังผู้เล่น")
 
 local locations = {
     {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 16.55, 2108.39)},
@@ -56,13 +54,15 @@ for _, loc in ipairs(locations) do
     end)
 end
 
+-- Teleport to Player Section
+local TeleportToPlayerSection = TeleportTab:NewSection("เทเลพอร์ตไปยังผู้เล่น")
+
 -- ฟังก์ชัน Teleport ป้องกันตกแมพ
 local function safeTeleport(targetCFrame)
     local character = player.Character or player.CharacterAdded:Wait()
     local root = character:FindFirstChild("HumanoidRootPart")
     if not root then return end
 
-    -- ตรวจสอบตำแหน่งบนพื้น (ประมาณ)
     local rayOrigin = targetCFrame.Position + Vector3.new(0, 50, 0)
     local rayDirection = Vector3.new(0, -100, 0)
     local raycastParams = RaycastParams.new()
@@ -72,7 +72,6 @@ local function safeTeleport(targetCFrame)
     local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
 
     if raycastResult and raycastResult.Position then
-        -- ถ้ามีพื้นอยู่ด้านล่าง ก็เทเลพอร์ตไปพื้นนั้น (สูงกว่าพื้น 5 studs)
         local safePos = raycastResult.Position + Vector3.new(0, 5, 0)
         root.CFrame = CFrame.new(safePos) * CFrame.new(targetCFrame.LookVector)
     else
@@ -80,9 +79,9 @@ local function safeTeleport(targetCFrame)
     end
 end
 
--- สร้าง Dropdown รายชื่อผู้เล่นให้เลือก teleport ไป
-local function updatePlayerList()
-    TeleportToPlayerSection:Clear() -- ล้างปุ่มเก่าออกก่อน
+-- ฟังก์ชันอัปเดตปุ่มรายชื่อผู้เล่น
+local function updatePlayerButtons()
+    TeleportToPlayerSection:Clear()
     for _, plr in pairs(Players:GetPlayers()) do
         if plr ~= player then
             TeleportToPlayerSection:NewButton(plr.Name, "Teleport ไปหา " .. plr.Name, function()
@@ -102,16 +101,9 @@ local function updatePlayerList()
     end
 end
 
--- เรียกตอนเริ่มแรก และสามารถเรียกใหม่ได้ถ้าผู้เล่นเปลี่ยน
-updatePlayerList()
-
-Players.PlayerAdded:Connect(function()
-    updatePlayerList()
-end)
-
-Players.PlayerRemoving:Connect(function()
-    updatePlayerList()
-end)
+updatePlayerButtons()
+Players.PlayerAdded:Connect(updatePlayerButtons)
+Players.PlayerRemoving:Connect(updatePlayerButtons)
 
 -- ================= Misc Tab =================
 local MiscTab = Window:NewTab("Misc")
@@ -154,6 +146,11 @@ local function DisableNoclip()
     end
 end
 
+MiscSection:NewToggle("เปิด/ปิด Noclip", "เดินทะลุสิ่งของ", function(value)
+    noclipEnabled = value
+    if value then EnableNoclip() else DisableNoclip() end
+end)
+
 -- Invisible
 local invisibleEnabled = false
 local function SetInvisible(enabled)
@@ -171,26 +168,40 @@ local function SetInvisible(enabled)
     end
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     if humanoid then
-        humanoid.NameDisplayDistance = enabled and 0 or 100 -- ซ่อน/แสดงชื่อ
+        humanoid.NameDisplayDistance = enabled and 0 or 100
     end
 end
 
--- God Mode (สุขภาพไม่ลด)
+MiscSection:NewToggle("เปิด/ปิด ล่องหน", "ล่องหนและไม่ชน", function(value)
+    invisibleEnabled = value
+    SetInvisible(value)
+end)
+
+-- God Mode (เลือดไม่ลด)
 local godmodeEnabled = false
-local function SetGodMode(enabled)
+local healthConnection
+
+MiscSection:NewToggle("เปิด/ปิด God Mode", "เลือดไม่ลด", function(value)
+    godmodeEnabled = value
     local character = player.Character
     if not character then return end
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     if not humanoid then return end
-    if enabled then
-        humanoid.HealthChanged:Connect(function()
+
+    if healthConnection then
+        healthConnection:Disconnect()
+        healthConnection = nil
+    end
+
+    if godmodeEnabled then
+        humanoid.Health = humanoid.MaxHealth
+        healthConnection = humanoid.HealthChanged:Connect(function()
             if humanoid.Health < humanoid.MaxHealth then
                 humanoid.Health = humanoid.MaxHealth
             end
         end)
-        humanoid.Health = humanoid.MaxHealth
     end
-end
+end)
 
 -- Fly
 local flying = false
@@ -221,37 +232,23 @@ local function StartFly()
     local function onInputBegan(input, gameProcessed)
         if gameProcessed then return end
         local key = input.KeyCode
-        if key == Enum.KeyCode.W then
-            ctrl.f = 1
-        elseif key == Enum.KeyCode.S then
-            ctrl.b = -1
-        elseif key == Enum.KeyCode.A then
-            ctrl.l = -1
-        elseif key == Enum.KeyCode.D then
-            ctrl.r = 1
-        elseif key == Enum.KeyCode.Space then
-            ctrl.u = 1
-        elseif key == Enum.KeyCode.LeftShift then
-            ctrl.d = -1
-        end
+        if key == Enum.KeyCode.W then ctrl.f = 1
+        elseif key == Enum.KeyCode.S then ctrl.b = -1
+        elseif key == Enum.KeyCode.A then ctrl.l = -1
+        elseif key == Enum.KeyCode.D then ctrl.r = 1
+        elseif key == Enum.KeyCode.Space then ctrl.u = 1
+        elseif key == Enum.KeyCode.LeftShift then ctrl.d = -1 end
     end
 
     local function onInputEnded(input, gameProcessed)
         if gameProcessed then return end
         local key = input.KeyCode
-        if key == Enum.KeyCode.W then
-            ctrl.f = 0
-        elseif key == Enum.KeyCode.S then
-            ctrl.b = 0
-        elseif key == Enum.KeyCode.A then
-            ctrl.l = 0
-        elseif key == Enum.KeyCode.D then
-            ctrl.r = 0
-        elseif key == Enum.KeyCode.Space then
-            ctrl.u = 0
-        elseif key == Enum.KeyCode.LeftShift then
-            ctrl.d = 0
-        end
+        if key == Enum.KeyCode.W then ctrl.f = 0
+        elseif key == Enum.KeyCode.S then ctrl.b = 0
+        elseif key == Enum.KeyCode.A then ctrl.l = 0
+        elseif key == Enum.KeyCode.D then ctrl.r = 0
+        elseif key == Enum.KeyCode.Space then ctrl.u = 0
+        elseif key == Enum.KeyCode.LeftShift then ctrl.d = 0 end
     end
 
     UserInputService.InputBegan:Connect(onInputBegan)
@@ -284,53 +281,13 @@ local function StopFly()
     local character = player.Character
     if not character then return end
     local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.PlatformStand = false
-    end
-    if bodyGyro then
-        bodyGyro:Destroy()
-        bodyGyro = nil
-    end
-    if bodyVelocity then
-        bodyVelocity:Destroy()
-        bodyVelocity = nil
-    end
-    if flyConnection then
-        flyConnection:Disconnect()
-        flyConnection = nil
-    end
+    if humanoid then humanoid.PlatformStand = false end
+    if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+    if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+    if flyConnection then flyConnection:Disconnect() flyConnection = nil end
 end
 
--- Toggle Fly
-MiscSection:NewToggle("เปิด/ปิด Fly", "บินโดยกด W A S D, Space ขึ้น, Shift ลง", function(value)
+MiscSection:NewToggle("เปิด/ปิด Fly", "บินโดย W A S D, Space ขึ้น, Shift ลง", function(value)
     flying = value
-    if flying then
-        StartFly()
-    else
-        StopFly()
-    end
-end)
-
--- Toggle Noclip
-MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือปิดโหมดเดินทะลุ", function(value)
-    noclipEnabled = value
-    if noclipEnabled then
-        EnableNoclip()
-    else
-        DisableNoclip()
-    end
-end)
-
--- Toggle Invisible
-MiscSection:NewToggle("เปิด/ปิด ล่องหน", "ทำให้ตัวละครล่องหนและไม่ชน", function(value)
-    invisibleEnabled = value
-    SetInvisible(invisibleEnabled)
-end)
-
--- Toggle God Mode
-MiscSection:NewToggle("เปิด/ปิด God Mode", "ป้องกันไม่ให้เลือดลด", function(value)
-    godmodeEnabled = value
-    if godmodeEnabled then
-        SetGodMode(true)
-    end
+    if value then StartFly() else StopFly() end
 end)
