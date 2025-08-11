@@ -2,13 +2,13 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 local Window = Library.CreateLib("JustHub", "BloodTheme")
 
--- ✅ สร้าง Tab หลัก
-local TeleportTab = Window:NewTab("Teleport")
+local player = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
 
--- ✅ สร้าง Section
+-- ================= Teleport Tab =================
+local TeleportTab = Window:NewTab("Teleport")
 local LocationSection = TeleportTab:NewSection("เลือกสถานที่")
 
--- จุดทั้งหมด (เหมือนเดิม)
 local locations = {
     {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 16.55, 2108.39)},
     {name = "ATM ตลาดโลก", cframe = CFrame.new(2999.37, 16.60, 2278.67)},
@@ -36,9 +36,6 @@ local locations = {
     {name = "กระหล่ำ", cframe = CFrame.new(6085.44, 51.19, -2235.12)},
 }
 
-local player = game.Players.LocalPlayer
-
--- สร้างปุ่มแต่ละสถานที่
 for _, loc in ipairs(locations) do
     LocationSection:NewButton(loc.name, "กดเพื่อวาร์ปไปยัง " .. loc.name, function()
         local character = player.Character or player.CharacterAdded:Wait()
@@ -47,19 +44,24 @@ for _, loc in ipairs(locations) do
     end)
 end
 
--- เพิ่มแท็บ Misc สำหรับ Noclip
+-- ================= Misc Tab =================
 local MiscTab = Window:NewTab("Misc")
 local MiscSection = MiscTab:NewSection("ฟีเจอร์เสริม")
 
+-- Noclip variables
 local noclipEnabled = false
-local RunService = game:GetService("RunService")
-local character = player.Character or player.CharacterAdded:Wait()
-local rootPart = character:WaitForChild("HumanoidRootPart")
+local noclipConnection
 
--- ฟังก์ชัน noclip
-local function noclipLoop()
-    RunService.Stepped:Connect(function()
-        if noclipEnabled and character and rootPart then
+local function EnableNoclip()
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+
+    noclipConnection = RunService.Stepped:Connect(function()
+        if not noclipEnabled then return end
+        local character = player.Character
+        if character then
             for _, part in pairs(character:GetChildren()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
@@ -69,19 +71,127 @@ local function noclipLoop()
     end)
 end
 
--- สร้าง Toggle เปิด/ปิด Noclip
-MiscSection:NewToggle("เปิด/ปิด Noclip", "กดเพื่อเปิดหรือปิดโหมดเดินทะลุ", function(value)
-    noclipEnabled = value
-    if noclipEnabled then
-        noclipLoop()
-    else
-        -- ปิด Noclip ให้กลับสู่สภาพปกติ (ชนปกติ)
-        if character then
-            for _, part in pairs(character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
+local function DisableNoclip()
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+
+    local character = player.Character
+    if character then
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
             end
         end
+    end
+end
+
+-- Fly variables
+local flying = false
+local speed = 50
+local bodyGyro
+local bodyVelocity
+
+local function StartFly()
+    local character = player.Character
+    if not character then return end
+    local root = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not root or not humanoid then return end
+
+    humanoid.PlatformStand = true
+
+    bodyGyro = Instance.new("BodyGyro", root)
+    bodyGyro.P = 9e4
+    bodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.cframe = root.CFrame
+
+    bodyVelocity = Instance.new("BodyVelocity", root)
+    bodyVelocity.velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
+    local userInputService = game:GetService("UserInputService")
+
+    local ctrl = {f = 0, b = 0, l = 0, r = 0}
+
+    local function onInputBegan(input, gameProcessed)
+        if gameProcessed then return end
+        local key = input.KeyCode
+        if key == Enum.KeyCode.W then
+            ctrl.f = 1
+        elseif key == Enum.KeyCode.S then
+            ctrl.b = -1
+        elseif key == Enum.KeyCode.A then
+            ctrl.l = -1
+        elseif key == Enum.KeyCode.D then
+            ctrl.r = 1
+        end
+    end
+
+    local function onInputEnded(input, gameProcessed)
+        if gameProcessed then return end
+        local key = input.KeyCode
+        if key == Enum.KeyCode.W then
+            ctrl.f = 0
+        elseif key == Enum.KeyCode.S then
+            ctrl.b = 0
+        elseif key == Enum.KeyCode.A then
+            ctrl.l = 0
+        elseif key == Enum.KeyCode.D then
+            ctrl.r = 0
+        end
+    end
+
+    userInputService.InputBegan:Connect(onInputBegan)
+    userInputService.InputEnded:Connect(onInputEnded)
+
+    local flyConnection
+    flyConnection = RunService.Heartbeat:Connect(function()
+        if not flying then
+            if bodyGyro then bodyGyro:Destroy() end
+            if bodyVelocity then bodyVelocity:Destroy() end
+            if humanoid then humanoid.PlatformStand = false end
+            flyConnection:Disconnect()
+            return
+        end
+
+        local moveVector = (workspace.CurrentCamera.CFrame.LookVector * (ctrl.f + ctrl.b)) + (workspace.CurrentCamera.CFrame.RightVector * (ctrl.r + ctrl.l))
+        bodyVelocity.velocity = moveVector.Unit * speed
+
+        bodyGyro.cframe = workspace.CurrentCamera.CFrame
+    end)
+end
+
+local function StopFly()
+    flying = false
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
+    end
+    if bodyGyro then bodyGyro:Destroy() end
+    if bodyVelocity then bodyVelocity:Destroy() end
+end
+
+-- สร้าง Toggle สำหรับ Noclip
+MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือปิดโหมดเดินทะลุ", function(value)
+    noclipEnabled = value
+    if noclipEnabled then
+        EnableNoclip()
+    else
+        DisableNoclip()
+    end
+end)
+
+-- สร้าง Toggle สำหรับ Fly
+MiscSection:NewToggle("เปิด/ปิด Fly", "กดเพื่อบินขึ้น-ลง", function(value)
+    flying = value
+    if flying then
+        StartFly()
+    else
+        StopFly()
     end
 end)
