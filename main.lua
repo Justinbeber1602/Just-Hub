@@ -4,6 +4,7 @@ local Window = Library.CreateLib("JustHub", "BloodTheme")
 
 local player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 -- ================= Teleport Tab =================
 local TeleportTab = Window:NewTab("Teleport")
@@ -57,7 +58,6 @@ local function EnableNoclip()
         noclipConnection:Disconnect()
         noclipConnection = nil
     end
-
     noclipConnection = RunService.Stepped:Connect(function()
         if not noclipEnabled then return end
         local character = player.Character
@@ -76,7 +76,6 @@ local function DisableNoclip()
         noclipConnection:Disconnect()
         noclipConnection = nil
     end
-
     local character = player.Character
     if character then
         for _, part in pairs(character:GetChildren()) do
@@ -92,6 +91,13 @@ local flying = false
 local speed = 50
 local bodyGyro
 local bodyVelocity
+
+local ctrl = {f = 0, b = 0, l = 0, r = 0}
+
+local userInputBeganConn
+local userInputEndedConn
+
+local flyConnection
 
 local function StartFly()
     local character = player.Character
@@ -111,55 +117,52 @@ local function StartFly()
     bodyVelocity.velocity = Vector3.new(0, 0, 0)
     bodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
 
-    local userInputService = game:GetService("UserInputService")
-
-    local ctrl = {f = 0, b = 0, l = 0, r = 0}
-
-    local function onInputBegan(input, gameProcessed)
+    -- ฟังชั่นจับปุ่ม
+    userInputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         local key = input.KeyCode
-        if key == Enum.KeyCode.W then
-            ctrl.f = 1
-        elseif key == Enum.KeyCode.S then
-            ctrl.b = -1
-        elseif key == Enum.KeyCode.A then
-            ctrl.l = -1
-        elseif key == Enum.KeyCode.D then
-            ctrl.r = 1
+        if key == Enum.KeyCode.W then ctrl.f = 1
+        elseif key == Enum.KeyCode.S then ctrl.b = -1
+        elseif key == Enum.KeyCode.A then ctrl.l = -1
+        elseif key == Enum.KeyCode.D then ctrl.r = 1
+        elseif key == Enum.KeyCode.Space then
+            bodyVelocity.velocity = Vector3.new(0, speed, 0) -- บินขึ้น
+        elseif key == Enum.KeyCode.LeftControl then
+            bodyVelocity.velocity = Vector3.new(0, -speed, 0) -- บินลง
         end
-    end
+    end)
 
-    local function onInputEnded(input, gameProcessed)
+    userInputEndedConn = UserInputService.InputEnded:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         local key = input.KeyCode
-        if key == Enum.KeyCode.W then
-            ctrl.f = 0
-        elseif key == Enum.KeyCode.S then
-            ctrl.b = 0
-        elseif key == Enum.KeyCode.A then
-            ctrl.l = 0
-        elseif key == Enum.KeyCode.D then
-            ctrl.r = 0
+        if key == Enum.KeyCode.W then ctrl.f = 0
+        elseif key == Enum.KeyCode.S then ctrl.b = 0
+        elseif key == Enum.KeyCode.A then ctrl.l = 0
+        elseif key == Enum.KeyCode.D then ctrl.r = 0
+        elseif key == Enum.KeyCode.Space or key == Enum.KeyCode.LeftControl then
+            bodyVelocity.velocity = Vector3.new(0, 0, 0) -- หยุดขึ้นลงเมื่อปล่อย
         end
-    end
+    end)
 
-    userInputService.InputBegan:Connect(onInputBegan)
-    userInputService.InputEnded:Connect(onInputEnded)
-
-    local flyConnection
     flyConnection = RunService.Heartbeat:Connect(function()
         if not flying then
             if bodyGyro then bodyGyro:Destroy() end
             if bodyVelocity then bodyVelocity:Destroy() end
             if humanoid then humanoid.PlatformStand = false end
+            if userInputBeganConn then userInputBeganConn:Disconnect() end
+            if userInputEndedConn then userInputEndedConn:Disconnect() end
             flyConnection:Disconnect()
             return
         end
 
-        local moveVector = (workspace.CurrentCamera.CFrame.LookVector * (ctrl.f + ctrl.b)) + (workspace.CurrentCamera.CFrame.RightVector * (ctrl.r + ctrl.l))
-        bodyVelocity.velocity = moveVector.Unit * speed
-
-        bodyGyro.cframe = workspace.CurrentCamera.CFrame
+        local camCF = workspace.CurrentCamera.CFrame
+        local moveVector = (camCF.LookVector * (ctrl.f + ctrl.b)) + (camCF.RightVector * (ctrl.r + ctrl.l))
+        if moveVector.Magnitude > 0 then
+            bodyVelocity.velocity = moveVector.Unit * speed + Vector3.new(0, bodyVelocity.velocity.Y, 0)
+        else
+            bodyVelocity.velocity = Vector3.new(0, bodyVelocity.velocity.Y, 0)
+        end
+        bodyGyro.cframe = camCF
     end)
 end
 
@@ -174,6 +177,30 @@ local function StopFly()
     end
     if bodyGyro then bodyGyro:Destroy() end
     if bodyVelocity then bodyVelocity:Destroy() end
+    if userInputBeganConn then userInputBeganConn:Disconnect() end
+    if userInputEndedConn then userInputEndedConn:Disconnect() end
+    if flyConnection then flyConnection:Disconnect() end
+end
+
+-- Invisible variables
+local invisibleEnabled = false
+local function SetInvisible(enabled)
+    local character = player.Character
+    if not character then return end
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.Transparency = enabled and 1 or 0
+            part.CanCollide = not enabled
+        elseif part:IsA("Decal") or part:IsA("Texture") then
+            part.Transparency = enabled and 1 or 0
+        elseif part:IsA("ParticleEmitter") or part:IsA("Light") then
+            part.Enabled = not enabled
+        end
+    end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.NameDisplayDistance = enabled and 0 or 100 -- ซ่อน/แสดงชื่อ
+    end
 end
 
 -- สร้าง Toggle สำหรับ Noclip
@@ -187,11 +214,17 @@ MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือ
 end)
 
 -- สร้าง Toggle สำหรับ Fly
-MiscSection:NewToggle("เปิด/ปิด Fly", "กดเพื่อบินขึ้น-ลง", function(value)
+MiscSection:NewToggle("เปิด/ปิด Fly", "กดเพื่อบินขึ้น-ลง (ใช้ W A S D + Space + Ctrl)", function(value)
     flying = value
     if flying then
         StartFly()
     else
         StopFly()
     end
+end)
+
+-- สร้าง Toggle สำหรับ Invisible
+MiscSection:NewToggle("เปิด/ปิด ล่องหน", "ทำให้ตัวละครล่องหนและไม่ชน", function(value)
+    invisibleEnabled = value
+    SetInvisible(invisibleEnabled)
 end)
