@@ -8,7 +8,7 @@ local TeleportTab = Window:NewTab("Teleport")
 -- ✅ สร้าง Section
 local LocationSection = TeleportTab:NewSection("เลือกสถานที่")
 
--- จุดทั้งหมด
+-- จุดทั้งหมด (เหมือนเดิม)
 local locations = {
     {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 16.55, 2108.39)},
     {name = "ATM ตลาดโลก", cframe = CFrame.new(2999.37, 16.60, 2278.67)},
@@ -38,7 +38,7 @@ local locations = {
 
 local player = game.Players.LocalPlayer
 
--- ✅ สร้างปุ่มแต่ละสถานที่
+-- สร้างปุ่มแต่ละสถานที่
 for _, loc in ipairs(locations) do
     LocationSection:NewButton(loc.name, "กดเพื่อวาร์ปไปยัง " .. loc.name, function()
         local character = player.Character or player.CharacterAdded:Wait()
@@ -46,3 +46,42 @@ for _, loc in ipairs(locations) do
         root.CFrame = loc.cframe
     end)
 end
+
+-- เพิ่มแท็บ Misc สำหรับ Noclip
+local MiscTab = Window:NewTab("Misc")
+local MiscSection = MiscTab:NewSection("ฟีเจอร์เสริม")
+
+local noclipEnabled = false
+local RunService = game:GetService("RunService")
+local character = player.Character or player.CharacterAdded:Wait()
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- ฟังก์ชัน noclip
+local function noclipLoop()
+    RunService.Stepped:Connect(function()
+        if noclipEnabled and character and rootPart then
+            for _, part in pairs(character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+-- สร้าง Toggle เปิด/ปิด Noclip
+MiscSection:NewToggle("เปิด/ปิด Noclip", "กดเพื่อเปิดหรือปิดโหมดเดินทะลุ", function(value)
+    noclipEnabled = value
+    if noclipEnabled then
+        noclipLoop()
+    else
+        -- ปิด Noclip ให้กลับสู่สภาพปกติ (ชนปกติ)
+        if character then
+            for _, part in pairs(character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end
+end)
