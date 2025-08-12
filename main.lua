@@ -86,7 +86,7 @@ local function DisableNoclip()
     end
 end
 
--- สร้าง Toggle สำหรับ Noclip
+-- Toggle Noclip
 MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือปิดโหมดเดินทะลุ", function(value)
     noclipEnabled = value
     if noclipEnabled then
@@ -95,3 +95,30 @@ MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือ
         DisableNoclip()
     end
 end)
+
+-- ================= ทำให้ UI ขยับได้ + ปุ่มกากบาท =================
+task.wait(1) -- รอ UI สร้างเสร็จก่อน
+local CoreGui = game:GetService("CoreGui")
+local gui = CoreGui:FindFirstChild("JustHub") -- ชื่อหน้าต่างจาก CreateLib
+
+if gui then
+    -- ทำให้ลากได้
+    local frame = gui:FindFirstChildWhichIsA("Frame", true)
+    if frame then
+        frame.Active = true
+        frame.Draggable = true
+    end
+
+    -- เพิ่มปุ่มปิด
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 25, 0, 25)
+    closeBtn.Position = UDim2.new(1, -30, 0, 5)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    closeBtn.Text = "X"
+    closeBtn.TextColor3 = Color3.new(1, 1, 1)
+    closeBtn.Parent = frame
+
+    closeBtn.MouseButton1Click:Connect(function()
+        gui:Destroy()
+    end)
+end
