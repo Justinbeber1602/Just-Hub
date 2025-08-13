@@ -91,52 +91,110 @@ MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือ
     end
 end)
 
--- ================= ลาก UI + ปิดได้ =================
-task.wait(1) -- รอ UI โหลด
-local gui = CoreGui:FindFirstChild("JustHub") -- หา ScreenGui จากชื่อ
-
-if gui then
-    local frame = gui:FindFirstChildWhichIsA("Frame", true)
-    if frame then
-        -- ปุ่มปิด
-        local closeBtn = Instance.new("TextButton")
-        closeBtn.Size = UDim2.new(0, 25, 0, 25)
-        closeBtn.Position = UDim2.new(1, -30, 0, 5)
-        closeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        closeBtn.Text = "X"
-        closeBtn.TextColor3 = Color3.new(1, 1, 1)
-        closeBtn.Parent = frame
-
-        closeBtn.MouseButton1Click:Connect(function()
-            gui:Destroy()
-        end)
-
-        -- ลากได้ (รองรับ Roblox ใหม่)
-        local dragging, dragStart, startPos
-        local function update(input)
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+-- ================= ลาก UI + ปิดได้ (แก้ไขแล้ว) =================
+task.spawn(function()
+    task.wait(2) -- รอ UI โหลดให้เต็มที่
+    
+    -- Debug: ดูว่ามี GUI อะไรใน CoreGui บ้าง
+    print("=== Debug: GUI ใน CoreGui ===")
+    for _, child in pairs(CoreGui:GetChildren()) do
+        if child:IsA("ScreenGui") then
+            print("พบ ScreenGui:", child.Name)
         end
-
-        frame.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = input.Position
-                startPos = frame.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                    end
-                end)
-            end
-        end)
-
-        frame.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                if dragging then
-                    update(input)
-                end
-            end
-        end)
     end
-end
+    
+    -- ลองหา GUI หลายแบบ
+    local gui = CoreGui:FindFirstChild("JustHub") or 
+                CoreGui:FindFirstChild("Kavo-UI") or 
+                CoreGui:FindFirstChild("Library") or
+                CoreGui:FindFirstChild("KavoLibrary")
+    
+    -- หากยังไม่เจอ ให้หาทุก ScreenGui
+    if not gui then
+        for _, child in pairs(CoreGui:GetChildren()) do
+            if child:IsA("ScreenGui") and child.Name ~= "Chat" and child.Name ~= "PlayerGui" then
+                gui = child
+                print("ใช้ GUI:", child.Name)
+                break
+            end
+        end
+    end
+
+    if gui then
+        print("พบ GUI:", gui.Name)
+        
+        -- หา Frame หลัก (ลองหาหลายแบบ)
+        local mainFrame = gui:FindFirstChild("Main") or 
+                         gui:FindFirstChildWhichIsA("Frame", true)
+        
+        if mainFrame then
+            print("พบ Frame:", mainFrame.Name)
+            
+            -- สร้างปุ่มปิด
+            local closeBtn = Instance.new("TextButton")
+            closeBtn.Size = UDim2.new(0, 25, 0, 25)
+            closeBtn.Position = UDim2.new(1, -30, 0, 5)
+            closeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            closeBtn.BorderSizePixel = 0
+            closeBtn.Text = "✕"
+            closeBtn.TextColor3 = Color3.new(1, 1, 1)
+            closeBtn.TextScaled = true
+            closeBtn.Font = Enum.Font.SourceSansBold
+            closeBtn.ZIndex = 999
+            closeBtn.Parent = mainFrame
+            
+            print("สร้างปุ่มปิดแล้ว")
+
+            closeBtn.MouseButton1Click:Connect(function()
+                print("กดปุ่มปิด")
+                gui:Destroy()
+            end)
+
+            -- ทำให้ลากได้ (วิธีใหม่)
+            local UIS = UserInputService
+            local dragging = false
+            local dragStart = nil
+            local startPos = nil
+
+            local function updateInput(input)
+                local delta = input.Position - dragStart
+                mainFrame.Position = UDim2.new(
+                    startPos.X.Scale, 
+                    startPos.X.Offset + delta.X, 
+                    startPos.Y.Scale, 
+                    startPos.Y.Offset + delta.Y
+                )
+            end
+
+            mainFrame.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true
+                    dragStart = input.Position
+                    startPos = mainFrame.Position
+                    print("เริ่มลาก")
+                    
+                    input.Changed:Connect(function()
+                        if input.UserInputState == Enum.UserInputState.End then
+                            dragging = false
+                            print("หยุดลาก")
+                        end
+                    end)
+                end
+            end)
+
+            mainFrame.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                    if dragging then
+                        updateInput(input)
+                    end
+                end
+            end)
+            
+            print("ตั้งค่าการลากเสร็จแล้ว")
+        else
+            print("❌ ไม่พบ Frame")
+        end
+    else
+        print("❌ ไม่พบ GUI")
+    end
+end)
