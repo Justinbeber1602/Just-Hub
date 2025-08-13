@@ -5,6 +5,7 @@ local Window = Library.CreateLib("JustHub", "BloodTheme")
 local player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
 
 -- ================= Teleport Tab =================
 local TeleportTab = Window:NewTab("Teleport")
@@ -49,22 +50,20 @@ end
 local MiscTab = Window:NewTab("Misc")
 local MiscSection = MiscTab:NewSection("ฟีเจอร์เสริม")
 
--- Noclip variables
+-- Noclip
 local noclipEnabled = false
 local noclipConnection
 
 local function EnableNoclip()
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
+    if noclipConnection then noclipConnection:Disconnect() end
     noclipConnection = RunService.Stepped:Connect(function()
-        if not noclipEnabled then return end
-        local character = player.Character
-        if character then
-            for _, part in pairs(character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
+        if noclipEnabled then
+            local character = player.Character
+            if character then
+                for _, part in pairs(character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
                 end
             end
         end
@@ -72,10 +71,7 @@ local function EnableNoclip()
 end
 
 local function DisableNoclip()
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
+    if noclipConnection then noclipConnection:Disconnect() end
     local character = player.Character
     if character then
         for _, part in pairs(character:GetChildren()) do
@@ -86,7 +82,6 @@ local function DisableNoclip()
     end
 end
 
--- Toggle Noclip
 MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือปิดโหมดเดินทะลุ", function(value)
     noclipEnabled = value
     if noclipEnabled then
@@ -96,29 +91,52 @@ MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือ
     end
 end)
 
--- ================= ทำให้ UI ขยับได้ + ปุ่มกากบาท =================
-task.wait(1) -- รอ UI สร้างเสร็จก่อน
-local CoreGui = game:GetService("CoreGui")
-local gui = CoreGui:FindFirstChild("JustHub") -- ชื่อหน้าต่างจาก CreateLib
+-- ================= ลาก UI + ปิดได้ =================
+task.wait(1) -- รอ UI โหลด
+local gui = CoreGui:FindFirstChild("JustHub") -- หา ScreenGui จากชื่อ
 
 if gui then
-    -- ทำให้ลากได้
     local frame = gui:FindFirstChildWhichIsA("Frame", true)
     if frame then
-        frame.Active = true
-        frame.Draggable = true
+        -- ปุ่มปิด
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.new(0, 25, 0, 25)
+        closeBtn.Position = UDim2.new(1, -30, 0, 5)
+        closeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        closeBtn.Text = "X"
+        closeBtn.TextColor3 = Color3.new(1, 1, 1)
+        closeBtn.Parent = frame
+
+        closeBtn.MouseButton1Click:Connect(function()
+            gui:Destroy()
+        end)
+
+        -- ลากได้ (รองรับ Roblox ใหม่)
+        local dragging, dragStart, startPos
+        local function update(input)
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+
+        frame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = frame.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end)
+
+        frame.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                if dragging then
+                    update(input)
+                end
+            end
+        end)
     end
-
-    -- เพิ่มปุ่มปิด
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 25, 0, 25)
-    closeBtn.Position = UDim2.new(1, -30, 0, 5)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    closeBtn.Text = "X"
-    closeBtn.TextColor3 = Color3.new(1, 1, 1)
-    closeBtn.Parent = frame
-
-    closeBtn.MouseButton1Click:Connect(function()
-        gui:Destroy()
-    end)
 end
