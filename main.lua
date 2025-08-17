@@ -1,16 +1,28 @@
 -- 📌 ต้องรันใน LocalScript เท่านั้น
+-- โหลด Kavo UI Library (Roblox Studio จะไม่ใช้ loadstring ได้ ต้องมี ModuleScript)
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 local Window = Library.CreateLib("JustHub", "BloodTheme")
 
-local player = game.Players.LocalPlayer
+-- Services
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+
+-- Player
+local player: Player = Players.LocalPlayer
 
 -- ================= Teleport Tab =================
 local TeleportTab = Window:NewTab("Teleport")
 local LocationSection = TeleportTab:NewSection("เลือกสถานที่")
 
-local locations = {
+-- กำหนด type ของ location
+type Location = {
+    name: string,
+    cframe: CFrame
+}
+
+local locations: {Location} = {
     {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 16.55, 2108.39)},
     {name = "ATM ตลาดโลก", cframe = CFrame.new(2999.37, 16.60, 2278.67)},
     {name = "ผับ", cframe = CFrame.new(3158.82, 16.69, 2300.57)},
@@ -37,10 +49,10 @@ local locations = {
     {name = "กระหล่ำ", cframe = CFrame.new(6085.44, 51.19, -2235.12)},
 }
 
-for _, loc in ipairs(locations) do
+for _, loc: Location in ipairs(locations) do
     LocationSection:NewButton(loc.name, "กดเพื่อวาร์ปไปยัง " .. loc.name, function()
         local character = player.Character or player.CharacterAdded:Wait()
-        local root = character:WaitForChild("HumanoidRootPart")
+        local root: BasePart = character:WaitForChild("HumanoidRootPart") :: BasePart
         root.CFrame = loc.cframe
     end)
 end
@@ -51,7 +63,7 @@ local MiscSection = MiscTab:NewSection("ฟีเจอร์เสริม")
 
 -- Noclip variables
 local noclipEnabled = false
-local noclipConnection
+local noclipConnection: RBXScriptConnection? = nil
 
 local function EnableNoclip()
     if noclipConnection then
@@ -62,7 +74,7 @@ local function EnableNoclip()
         if not noclipEnabled then return end
         local character = player.Character
         if character then
-            for _, part in pairs(character:GetChildren()) do
+            for _, part in character:GetChildren() do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
                 end
@@ -78,7 +90,7 @@ local function DisableNoclip()
     end
     local character = player.Character
     if character then
-        for _, part in pairs(character:GetChildren()) do
+        for _, part in character:GetChildren() do
             if part:IsA("BasePart") then
                 part.CanCollide = true
             end
@@ -87,7 +99,7 @@ local function DisableNoclip()
 end
 
 -- Toggle Noclip
-MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือปิดโหมดเดินทะลุ", function(value)
+MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือปิดโหมดเดินทะลุ", function(value: boolean)
     noclipEnabled = value
     if noclipEnabled then
         EnableNoclip()
@@ -95,30 +107,3 @@ MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือ
         DisableNoclip()
     end
 end)
-
--- ================= ทำให้ UI ขยับได้ + ปุ่มกากบาท =================
-task.wait(1) -- รอ UI สร้างเสร็จก่อน
-local CoreGui = game:GetService("CoreGui")
-local gui = CoreGui:FindFirstChild("JustHub") -- ชื่อหน้าต่างจาก CreateLib
-
-if gui then
-    -- ทำให้ลากได้
-    local frame = gui:FindFirstChildWhichIsA("Frame", true)
-    if frame then
-        frame.Active = true
-        frame.Draggable = true
-    end
-
-    -- เพิ่มปุ่มปิด
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 25, 0, 25)
-    closeBtn.Position = UDim2.new(1, -30, 0, 5)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    closeBtn.Text = "X"
-    closeBtn.TextColor3 = Color3.new(1, 1, 1)
-    closeBtn.Parent = frame
-
-    closeBtn.MouseButton1Click:Connect(function()
-        gui:Destroy()
-    end)
-end
