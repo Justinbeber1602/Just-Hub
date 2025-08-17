@@ -1,26 +1,189 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("JustHub", "BloodTheme")
+-- 📌 LocalScript (StarterPlayerScripts)
+-- 🌟 JustHub Gaming UI + ปุ่มกากบาทปิดเมนู 🌟
 
--- Services
 local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
 
--- Player
-local player: Player = Players.LocalPlayer
+-- ================== UI หลัก ==================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "JustHubUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- ================= Teleport Tab =================
-local TeleportTab = Window:NewTab("Teleport")
-local LocationSection = TeleportTab:NewSection("เลือกสถานที่")
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 420, 0, 300)
+mainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+mainFrame.BackgroundTransparency = 0.15
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
 
--- กำหนด type ของ location
-type Location = {
-    name: string,
-    cframe: CFrame
-}
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 15)
+corner.Parent = mainFrame
 
-local locations: {Location} = {
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(255, 60, 60)
+stroke.Thickness = 3
+stroke.Parent = mainFrame
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -40, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "🔥 JustHub UI 🔥"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 22
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Position = UDim2.new(0, 10, 0, 0)
+title.Parent = mainFrame
+
+-- ปุ่มกากบาท (Close Button)
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 40, 0, 40)
+closeBtn.Position = UDim2.new(1, -45, 0, 0)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "❌"
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 24
+closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+closeBtn.Parent = mainFrame
+
+closeBtn.MouseButton1Click:Connect(function()
+	mainFrame.Visible = false
+end)
+
+-- ปุ่มเปิดใหม่ (Hotkey: F4)
+UserInputService = game:GetService("UserInputService")
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.KeyCode == Enum.KeyCode.F4 then
+		mainFrame.Visible = not mainFrame.Visible
+	end
+end)
+
+-- ================== Tab Container ==================
+local tabFrame = Instance.new("Frame")
+tabFrame.Size = UDim2.new(1, -20, 0, 40)
+tabFrame.Position = UDim2.new(0, 10, 0, 45)
+tabFrame.BackgroundTransparency = 1
+tabFrame.Parent = mainFrame
+
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.Padding = UDim.new(0, 10)
+tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+tabLayout.Parent = tabFrame
+
+-- Content Frame
+local contentFrame = Instance.new("Frame")
+contentFrame.Size = UDim2.new(1, -20, 1, -100)
+contentFrame.Position = UDim2.new(0, 10, 0, 90)
+contentFrame.BackgroundTransparency = 1
+contentFrame.Parent = mainFrame
+
+-- Scrollable Container
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1, 0, 1, 0)
+scroll.BackgroundTransparency = 1
+scroll.ScrollBarThickness = 6
+scroll.Parent = contentFrame
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 8)
+layout.FillDirection = Enum.FillDirection.Vertical
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = scroll
+
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	scroll.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y)
+end)
+
+-- ================== สร้างปุ่ม Helper ==================
+local function createButton(text, callback)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.9, 0, 0, 40)
+	btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Text = text
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 18
+	btn.Parent = scroll
+
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, 10)
+	c.Parent = btn
+
+	local s = Instance.new("UIStroke")
+	s.Color = Color3.fromRGB(255, 90, 90)
+	s.Thickness = 2
+	s.Parent = btn
+
+	btn.MouseEnter:Connect(function()
+		btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	end)
+	btn.MouseLeave:Connect(function()
+		btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	end)
+
+	btn.MouseButton1Click:Connect(callback)
+	return btn
+end
+
+-- ================== Tabs System ==================
+local tabs = {}
+local currentTab = nil
+
+local function switchTab(name)
+	if currentTab == name then return end
+	currentTab = name
+	for tabName, buttons in pairs(tabs) do
+		for _, b in ipairs(buttons) do
+			b.Visible = (tabName == name)
+		end
+	end
+end
+
+local function createTab(name)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 120, 1, 0)
+	btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Text = name
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 16
+	btn.Parent = tabFrame
+
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, 8)
+	c.Parent = btn
+
+	local s = Instance.new("UIStroke")
+	s.Color = Color3.fromRGB(255, 120, 120)
+	s.Thickness = 1.5
+	s.Parent = btn
+
+	tabs[name] = {}
+
+	btn.MouseButton1Click:Connect(function()
+		switchTab(name)
+	end)
+
+	return function(text, callback)
+		local b = createButton(text, callback)
+		b.Visible = false
+		table.insert(tabs[name], b)
+	end
+end
+
+-- ================== Teleport Tab ==================
+local Teleport = createTab("Teleport")
+
+local locations = {
     {name = "ตลาดโลก", cframe = CFrame.new(2846.01, 16.55, 2108.39)},
     {name = "ATM ตลาดโลก", cframe = CFrame.new(2999.37, 16.60, 2278.67)},
     {name = "ผับ", cframe = CFrame.new(3158.82, 16.69, 2300.57)},
@@ -46,62 +209,52 @@ local locations: {Location} = {
     {name = "สตอร์เบอรี่", cframe = CFrame.new(5949.39, 50.97, -1699.58)},
     {name = "กระหล่ำ", cframe = CFrame.new(6085.44, 51.19, -2235.12)},
 }
-
-for _, loc: Location in ipairs(locations) do
-    LocationSection:NewButton(loc.name, "กดเพื่อวาร์ปไปยัง " .. loc.name, function()
-        local character = player.Character or player.CharacterAdded:Wait()
-        local root: BasePart = character:WaitForChild("HumanoidRootPart") :: BasePart
-        root.CFrame = loc.cframe
-    end)
+for _, loc in ipairs(locations) do
+	Teleport("วาร์ปไป: "..loc.name, function()
+		local char = player.Character or player.CharacterAdded:Wait()
+		local root = char:WaitForChild("HumanoidRootPart")
+		root.CFrame = loc.cframe
+	end)
 end
 
--- ================= Misc Tab =================
-local MiscTab = Window:NewTab("Misc")
-local MiscSection = MiscTab:NewSection("ฟีเจอร์เสริม")
+-- ================== Misc Tab ==================
+local Misc = createTab("⚡ Misc")
 
--- Noclip variables
 local noclipEnabled = false
-local noclipConnection: RBXScriptConnection? = nil
+local noclipConnection
 
-local function EnableNoclip()
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
-    noclipConnection = RunService.Stepped:Connect(function()
-        if not noclipEnabled then return end
-        local character = player.Character
-        if character then
-            for _, part in character:GetChildren() do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
-            end
-        end
-    end)
+local function enableNoclip()
+	if noclipConnection then noclipConnection:Disconnect() end
+	noclipConnection = RunService.Stepped:Connect(function()
+		if noclipEnabled and player.Character then
+			for _, part in ipairs(player.Character:GetChildren()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = false
+				end
+			end
+		end
+	end)
 end
 
-local function DisableNoclip()
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
-    local character = player.Character
-    if character then
-        for _, part in character:GetChildren() do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
-            end
-        end
-    end
+local function disableNoclip()
+	if noclipConnection then noclipConnection:Disconnect() end
+	if player.Character then
+		for _, part in ipairs(player.Character:GetChildren()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = true
+			end
+		end
+	end
 end
 
--- Toggle Noclip
-MiscSection:NewToggle("เปิด/ปิด Noclip", "เปิดหรือปิดโหมดเดินทะลุ", function(value: boolean)
-    noclipEnabled = value
-    if noclipEnabled then
-        EnableNoclip()
-    else
-        DisableNoclip()
-    end
+Misc("🔘 Toggle Noclip", function()
+	noclipEnabled = not noclipEnabled
+	if noclipEnabled then
+		enableNoclip()
+	else
+		disableNoclip()
+	end
 end)
+
+-- ================== เปิด Tab เริ่มต้น ==================
+switchTab("🚀 Teleport")
