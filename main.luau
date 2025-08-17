@@ -1,5 +1,3 @@
--- 📌 ต้องรันใน LocalScript เท่านั้น
--- โหลด Kavo UI Library (Roblox Studio จะไม่ใช้ loadstring ได้ ต้องมี ModuleScript)
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 local Window = Library.CreateLib("JustHub", "BloodTheme")
 
