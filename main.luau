@@ -1,6 +1,3 @@
--- 📌 LocalScript (StarterPlayerScripts)
--- 🌟 JustHub Gaming UI + ปุ่มกากบาทปิดเมนู 🌟
-
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
