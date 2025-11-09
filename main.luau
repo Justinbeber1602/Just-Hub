@@ -2,7 +2,6 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
--- ================== UI หลัก ==================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "JustHubUI"
 screenGui.ResetOnSpawn = false
@@ -26,7 +25,6 @@ stroke.Color = Color3.fromRGB(255, 60, 60)
 stroke.Thickness = 3
 stroke.Parent = mainFrame
 
--- Title
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -40, 0, 40)
 title.BackgroundTransparency = 1
@@ -38,7 +36,6 @@ title.TextXAlignment = Enum.TextXAlignment.Left
 title.Position = UDim2.new(0, 10, 0, 0)
 title.Parent = mainFrame
 
--- ปุ่มกากบาท (Close Button)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 40, 0, 40)
 closeBtn.Position = UDim2.new(1, -45, 0, 0)
@@ -53,7 +50,6 @@ closeBtn.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
 end)
 
--- ปุ่มเปิดใหม่ (Hotkey: F4)
 UserInputService = game:GetService("UserInputService")
 UserInputService.InputBegan:Connect(function(input, gp)
 	if gp then return end
@@ -62,7 +58,6 @@ UserInputService.InputBegan:Connect(function(input, gp)
 	end
 end)
 
--- ================== Tab Container ==================
 local tabFrame = Instance.new("Frame")
 tabFrame.Size = UDim2.new(1, -20, 0, 40)
 tabFrame.Position = UDim2.new(0, 10, 0, 45)
@@ -75,14 +70,12 @@ tabLayout.Padding = UDim.new(0, 10)
 tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 tabLayout.Parent = tabFrame
 
--- Content Frame
 local contentFrame = Instance.new("Frame")
 contentFrame.Size = UDim2.new(1, -20, 1, -100)
 contentFrame.Position = UDim2.new(0, 10, 0, 90)
 contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = mainFrame
 
--- Scrollable Container
 local scroll = Instance.new("ScrollingFrame")
 scroll.Size = UDim2.new(1, 0, 1, 0)
 scroll.BackgroundTransparency = 1
@@ -100,7 +93,6 @@ layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	scroll.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y)
 end)
 
--- ================== สร้างปุ่ม Helper ==================
 local function createButton(text, callback)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0.9, 0, 0, 40)
@@ -131,7 +123,6 @@ local function createButton(text, callback)
 	return btn
 end
 
--- ================== Tabs System ==================
 local tabs = {}
 local currentTab = nil
 
@@ -177,7 +168,6 @@ local function createTab(name)
 	end
 end
 
--- ================== Teleport Tab ==================
 local Teleport = createTab("Teleport")
 
 local locations = {
@@ -214,7 +204,6 @@ for _, loc in ipairs(locations) do
 	end)
 end
 
--- ================== Misc Tab ==================
 local Misc = createTab("⚡ Misc")
 
 local noclipEnabled = false
@@ -253,5 +242,3 @@ Misc("🔘 Toggle Noclip", function()
 	end
 end)
 
--- ================== เปิด Tab เริ่มต้น ==================
-switchTab("🚀 Teleport")
